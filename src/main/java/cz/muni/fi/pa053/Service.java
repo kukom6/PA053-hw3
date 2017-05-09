@@ -19,28 +19,32 @@ import java.net.URL;
 @Path("/")
 public class Service {
 
-	private static String WEATHER_API_KEY = "1a916200fcdebd243b41054ad54dc6c7";
+	private static final String WEATHER_API_KEY = "1a916200fcdebd243b41054ad54dc6c7";
 
 	@GET
 	@Path("/service")
-	@Produces(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_XML)
 	public String getMsg(@QueryParam("query") String msg) throws Exception {
-		JSONObject result = new JSONObject();
+		Number result = null;
 		if(msg.matches("[A-Z]{3}")){ //airport code with three letters
 			JSONObject airport = (JSONObject) new JSONParser()
 					.parse(getHTML("http://www.airport-data.com/api/ap_info.json?iata=" + msg));
 			System.out.println("Airport information is:\n" + parseJsonToConsole(airport));
 			if(airport.get("icao")!=null){ // if airport exist
-				result.put("result",getTemperatureOfAirport(airport));
+				result = getTemperatureOfAirport(airport);
 			}else{
-				result.put("result",getValueOfStock(msg));
+				result = getValueOfStock(msg);
 			}
 		}else if(msg.matches("[A-Z]{1,4}")){ //STOCK
-			result.put("result",getValueOfStock(msg));
+			result = getValueOfStock(msg);
 		}else if(msg.matches("([-+]?[0-9]*\\.?[0-9]+[\\/\\+\\-\\*])+([-+]?[0-9]*\\.?[0-9]+)")){ //math
-			result.put("result",executeExpression(msg));
+			result = executeExpression(msg);
 		}
-		return result.toJSONString();
+		if(result!=null){
+			return "<result>" + result.toString() + "</result>";
+		}else{
+			return "<result></result>";
+		}
 	}
 
 	private String getHTML(String urlToRead) throws Exception {
@@ -58,7 +62,7 @@ public class Service {
 		return result.toString();
 	}
 
-	private Object getTemperatureOfAirport(JSONObject airportInfo) throws Exception {
+	private Number getTemperatureOfAirport(JSONObject airportInfo) throws Exception {
 		String longitude = (String) airportInfo.get("longitude");
 		String latitude = (String) airportInfo.get("latitude");
 		JSONObject weather = (JSONObject) new JSONParser()
@@ -66,14 +70,13 @@ public class Service {
 						+ "&lon=" + longitude + "&appid=" + WEATHER_API_KEY
 						+ "&units=metric"));
 		System.out.println("Weather information is:\n" + parseJsonToConsole(weather));
-		return ((JSONObject) weather.get("main")).get("temp");
+		return (Number)((JSONObject) weather.get("main")).get("temp");
 	}
 
-	private double getValueOfStock(String stockSymbol) throws IOException {
+	private BigDecimal getValueOfStock(String stockSymbol) throws IOException {
 		Stock stock = YahooFinance.get(stockSymbol);
 		System.out.println("Info about stock" + stock.toString());
-		BigDecimal price = stock.getQuote().getPrice();
-		return price.doubleValue();
+		return stock.getQuote().getPrice();
 	}
 
 	private double executeExpression(String expression){
