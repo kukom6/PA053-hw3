@@ -29,7 +29,7 @@ public class Service {
 		if(msg.matches("[A-Z]{3}")){ //airport code with three letters
 			JSONObject airport = (JSONObject) new JSONParser()
 					.parse(getHTML("http://www.airport-data.com/api/ap_info.json?iata=" + msg));
-			System.out.println("Airport information is:\n" + parseJsonToConsole(airport));
+			System.out.println("Airport information is:\n" + airport.toJSONString());
 			if(airport.get("icao")!=null){ // if airport exist
 				result = getTemperatureOfAirport(airport);
 			}else{
@@ -41,7 +41,7 @@ public class Service {
 			result = executeExpression(msg);
 		}
 		if(result!=null){
-			return "<result>" + result.toString() + "</result>";
+			return "<result>" + result.doubleValue() + "</result>";
 		}else{
 			return "<result></result>";
 		}
@@ -69,7 +69,7 @@ public class Service {
 				.parse(getHTML("http://api.openweathermap.org/data/2.5/weather?lat=" + latitude
 						+ "&lon=" + longitude + "&appid=" + WEATHER_API_KEY
 						+ "&units=metric"));
-		System.out.println("Weather information is:\n" + parseJsonToConsole(weather));
+		System.out.println("Weather information is:\n" + weather.toJSONString());
 		return (Number)((JSONObject) weather.get("main")).get("temp");
 	}
 
@@ -85,9 +85,5 @@ public class Service {
 		Double evaluated = e.evaluate();
 		System.out.println("The result of " + expression + " is: " + evaluated);
 		return evaluated;
-	}
-
-	private String parseJsonToConsole(JSONObject json){
-		return json.toJSONString();
 	}
 }
